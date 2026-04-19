@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>English Mastery - Focus Mode</title>
+    <style>
+        body { 
+            font-family: 'Helvetica Neue', Arial, sans-serif; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            height: 100vh; margin: 0; background: #f4f7f6; color: #333; overflow: hidden;
+        }
+        
+        #app-container { 
+            width: 95%; max-width: 500px; height: 90vh; 
+            display: flex; flex-direction: column; justify-content: center;
+            text-align: center; background: white; padding: 20px; 
+            border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); box-sizing: border-box;
+        }
+
+        #display-area { 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            flex-grow: 1; gap: 10px; overflow: hidden;
+        }
+
+        img { 
+            width: 100%; max-height: 70%; object-fit: contain;
+            border-radius: 12px; cursor: pointer; transition: all 0.3s ease; border: 1px solid #eee;
+        }
+
+        img.shrunk { max-height: 35%; width: 70%; }
+
+        .english-text { 
+            width: 100%; max-height: 30%; overflow-y: auto; 
+            font-size: 1.1rem; line-height: 1.4; color: #2c3e50; padding: 12px; 
+            background: #fffdf0; border-radius: 12px; border: 2px dashed #ebdcb2; 
+            font-weight: 500; animation: fadeIn 0.3s forwards; box-sizing: border-box;
+        }
+
+        .action-area { display: flex; gap: 20px; margin-top: 10px; width: 100%; justify-content: center; }
+        .action-btn { 
+            flex: 1; padding: 12px; border: none; border-radius: 10px; 
+            font-size: 1.1rem; cursor: pointer; color: white; font-weight: bold; transition: opacity 0.2s;
+        }
+        .btn-correct { background: #2ecc71; }
+        .btn-wrong { background: #e74c3c; }
+        .action-btn:active { opacity: 0.7; }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .hidden { display: none !important; }
+        .menu-btn { width: 80%; padding: 15px; margin: 10px; font-size: 1.1rem; border: none; border-radius: 10px; background: #4a90e2; color: white; cursor: pointer; font-weight: bold; }
+        .counter { margin-top: 10px; font-size: 0.8rem; color: #888; }
+        
+        #summary-screen h3 { margin: 0 0 20px 0; font-size: 1.5rem; }
+        .result-stats { margin-bottom: 25px; font-size: 1.1rem; }
+    </style>
+</head>
+<body>
+
+<div id="app-container">
+    <div id="setup">
+        <h2 style="font-size: 1.4rem; color: #2c3e50;">Study Mode</h2>
+        <button class="menu-btn" onclick="startApp('seq')">Sequential Order</button>
+        <button class="menu-btn" onclick="startApp('rand')">Random Shuffle</button>
+    </div>
+
+    <div id="main" class="hidden" style="height: 100%; display: flex; flex-direction: column;">
+        <div id="display-area">
+            <img id="current-image" src="" alt="Visualize" onclick="toggleView()">
+            <div id="current-text" class="english-text hidden"></div>
+            
+            <div id="judgement-area" class="action-area hidden">
+                <button class="action-btn btn-wrong" onclick="markResult(false)">Review</button>
+                <button class="action-btn btn-correct" onclick="markResult(true)">Mastered</button>
+            </div>
+        </div>
+        <div class="counter"><span id="current-num">1</span> / <span id="total-num">79</span></div>
+    </div>
+
+    <div id="summary-screen" class="hidden">
+        <h3>Round Finished!</h3>
+        <div class="result-stats">
+            Items to review: <span id="wrong-count" style="font-weight:bold; color:#e74c3c;">0</span>
+        </div>
+        <button id="review-btn" class="menu-btn" onclick="startReview()">Retake Mistakes</button>
+        <button class="menu-btn" style="background:#95a5a6;" onclick="location.reload()">Back to Home</button>
+    </div>
+</div>
+
+<script>
+    const fullData = [
+        { img: "images/image1.png", text: "A woman passed by me giving off a subtle scent of perfume. It reminded me of my ex-girlfriend." },
+        { img: "images/image2.png", text: "Bob was so beside himself that he could scarcely tell fact from fiction." },
+        { img: "images/image3.png", text: "This article contains tips for those who are eager to increase their vocabulary." },
+        { img: "images/image4.png", text: "As we anticipated, the unemployment rate has risen three quarters in a row." },
+        { img: "images/image5.png", text: "The lawyer recommended that his client take legal action against the insurance company." },
+        { img: "images/image6.png", text: "The theory of evolution is beyond the reach of my imagination." },
+        { img: "images/image7.png", text: "Now that I've found that there's no one to turn to, I'll have to stand on my own two feet." },
+        { img: "images/image8.png", text: "We exchanged frank opinions in the meeting, but consensus is yet to be reached regarding this matter." },
+        { img: "images/image9.png", text: "From an objective viewpoint, the former is inferior to the latter." },
+        { img: "images/image10.png", text: "In a sense, he is to blame for the disaster." },
+        { img: "images/image11.png", text: "No sooner had I sat back and relaxed than my wife asked me to do the chores." },
+        { img: "images/image12.png", text: "He fainted with hunger and fatigue, but came to after a while." },
+        { img: "images/image13.png", text: "In the course of its economic development, Japan has abandoned its traditional values." },
+        { img: "images/image14.png", text: "There's little prospect that the two countries will make significant progress in disarmament." },
+        { img: "images/image15.png", text: "The aristocrats abused their privileges to their hearts' content." },
+        { img: "images/image16.png", text: "He claimed that the enormous property was at his disposal." },
+        { img: "images/image17.png", text: "You ought to think over whether the premise is valid or not." },
+        { img: "images/image18.png", text: "Phil is much more interested in academic subjects than in practical skills." },
+        { img: "images/image19.png", text: "It's not your title that counts. That's for sure! exclaimed Bob." },
+        { img: "images/image20.png", text: "As a self-made man put it, 'A man of vision will make good in the end.'" },
+        { img: "images/image21.png", text: "To make matters worse, he isn't even conscious of annoying us." },
+        { img: "images/image22.png", text: "It occurred to me that he was holding something back, because he wouldn't look me in the eye." },
+        { img: "images/image23.png", text: "Bob sticks to his moral principles and believes that honesty pays off in the long run." },
+        { img: "images/image24.png", text: "He recalled that a collision had been avoided by sheer luck." },
+        { img: "images/image25.png", text: "He contends that primitive life once existed on Mars." },
+        { img: "images/image26.png", text: "A fund was set up with a view to preserving our endangered planet." },
+        { img: "images/image27.png", text: "The organization plays a principal role in wildlife conservation." },
+        { img: "images/image28.png", text: "Many fragile species are on the verge of extinction." },
+        { img: "images/image29.png", text: "The committee called on all nations to work side by side to curb air pollution." },
+        { img: "images/image30.png", text: "More often than not, famine is accompanied by plague." },
+        { img: "images/image31.png", text: "It's still up in the air whether the game will be called off or not. So what? It makes no difference to me." },
+        { img: "images/image32.png", text: "Chances are it'll clear up later on." },
+        { img: "images/image33.png", text: "More and more people are rushing to make use of the interactive nature of the medium." },
+        { img: "images/image34.png", text: "Innovation has something to do with the ability to notice unusual phenomena." },
+        { img: "images/image35.png", text: "We've come to the conclusion that nothing is more urgent than reducing Japan's huge deficit." },
+        { img: "images/image36.png", text: "The government did not take appropriate measures to prevent the infection from spreading." },
+        { img: "images/image37.png", text: "Many people regard the current compulsory education system as being obsolete." },
+        { img: "images/image38.png", text: "As he grew up, he learned to put things in perspective." },
+        { img: "images/image39.png", text: "In the face of adversity, Mike accomplished an extraordinary feat." },
+        { img: "images/image40.png", text: "It's optimistic of you to believe that things will work out. At best there's a 50-50 chance." },
+        { img: "images/image41.png", text: "His constant insults aroused her anger." },
+        { img: "images/image42.png", text: "In reality, many people have difficulty making ends meet. How can you get by on 100,000 yen a month?" },
+        { img: "images/image43.png", text: "Thanks to a fundamental restructuring, our surplus has swelled threefold." },
+        { img: "images/image44.png", text: "Ted, who is often referred to as a man of integrity, is going to run for mayor." },
+        { img: "images/image45.png", text: "It is the case that those who live on a pension are forced to lead a hard life." },
+        { img: "images/image46.png", text: "They are primarily concerned with exploiting us, not with enhancing our living standards." },
+        { img: "images/image47.png", text: "No one dares to contradict his/her employer for fear of being fired." },
+        { img: "images/image48.png", text: "He sacrificed his promising career to retain his dignity." },
+        { img: "images/image49.png", text: "I might as well kill myself as reconcile myself to my fate." },
+        { img: "images/image50.png", text: "A senior official is suspected of accepting bribes from a company, but there isn't sufficient evidence to arrest him." },
+        { img: "images/image51.png", text: "They found out the truth while examining a pile of relevant documents." },
+        { img: "images/image52.png", text: "For the first time in my life, I felt a pang of conscience, but there was no other way out." },
+        { img: "images/image53.png", text: "He is second to none when it comes to finding fault with others." },
+        { img: "images/image54.png", text: "We should appeal to reason instead of resorting to violence." },
+        { img: "images/image55.png", text: "The allies condemned the invasion as a violation of UN resolutions." },
+        { img: "images/image56.png", text: "We cannot rule out the possibility that civil war will break out in that country." },
+        { img: "images/image57.png", text: "The pro-choice group protested against a ban on abortion." },
+        { img: "images/image58.png", text: "Diplomatic dialogue helped put an end to the conflict." },
+        { img: "images/image59.png", text: "According to a survey, three in five people today are indifferent to foreign affairs." },
+        { img: "images/image60.png", text: "What will become of Japan-U.S. relations if the security treaty expires?" },
+        { img: "images/image61.png", text: "A poll shows that an overwhelming majority is in favor of the legislation." },
+        { img: "images/image62.png", text: "It took us all by surprise when the noted psychologist was accused of kidnapping." },
+        { img: "images/image63.png", text: "The officer on duty perceived an elderly man coming up behind him." },
+        { img: "images/image64.png", text: "The day before yesterday he witnessed a weird incident in the wilderness." },
+        { img: "images/image65.png", text: "At present, it's still uncertain whether it was done deliberately or by accident." },
+        { img: "images/image66.png", text: "A bomb went off in a thirty-story building, and more than 50 people were seriously wounded." },
+        { img: "images/image67.png", text: "The tribe worships its ancestors and speaks its own language, which is not familiar to us." },
+        { img: "images/image68.png", text: "That topic is too intimate to share with casual acquaintances." },
+        { img: "images/image69.png", text: "Having found no place he felt he belonged, he was extremely uneasy and lonely." },
+        { img: "images/image70.png", text: "It may seem trivial to you but for me it's worth paying attention to." },
+        { img: "images/image71.png", text: "Don't take it literally. He is inclined to exaggerate." },
+        { img: "images/image72.png", text: "You should apologize to Lisa for making fun of her. You went too far this time. I will, sometime when she's in a better mood." },
+        { img: "images/image73.png", text: "I cannot look back on my adolescence without feeling depressed." },
+        { img: "images/image74.png", text: "I've been going with Jennifer on and off for ages. You're as indecisive as ever. Isn't it about time you settled down?" },
+        { img: "images/image75.png", text: "It dawned on me that I had been taken in by Jennifer all along. How naive! Didn't you see through her?" },
+        { img: "images/image76.png", text: "Even though she is seeing someone else, I won't give her up." },
+        { img: "images/image77.png", text: "Jennifer went so far as to call me an idiot and she wouldn't take it back. Serves you right! You provoked her, didn't you?" },
+        { img: "images/image78.png", text: "Why do you put up with her arrogance? She's just taking advantage of you." },
+        { img: "images/image79.png", text: "Go easy on Bob. You know, he's been going through a rough period recently." }
+    ];
+
+    let currentData = [];
+    let currentIndex = 0;
+    let wrongIndices = [];
+    let isRandom = false;
+
+    function startApp(mode) {
+        isRandom = (mode === 'rand');
+        currentData = [...fullData];
+        wrongIndices = [];
+        initRound();
+    }
+
+    function startReview() {
+        const nextRoundData = wrongIndices.map(index => fullData[index]);
+        currentData = nextRoundData;
+        wrongIndices = [];
+        initRound();
+    }
+
+    function initRound() {
+        currentIndex = 0;
+        if (isRandom) {
+            currentData.sort(() => Math.random() - 0.5);
+        }
+        document.getElementById('setup').classList.add('hidden');
+        document.getElementById('summary-screen').classList.add('hidden');
+        document.getElementById('main').classList.remove('hidden');
+        document.getElementById('main').style.display = 'flex';
+        document.getElementById('total-num').innerText = currentData.length;
+        showPair();
+    }
+
+    function showPair() {
+        const item = currentData[currentIndex];
+        document.getElementById('current-image').src = item.img;
+        document.getElementById('current-text').innerText = item.text;
+        document.getElementById('current-num').innerText = currentIndex + 1;
+        
+        document.getElementById('current-image').classList.remove('shrunk');
+        document.getElementById('current-text').classList.add('hidden');
+        document.getElementById('judgement-area').classList.add('hidden');
+    }
+
+    function toggleView() {
+        document.getElementById('current-image').classList.add('shrunk');
+        document.getElementById('current-text').classList.remove('hidden');
+        document.getElementById('judgement-area').classList.remove('hidden');
+    }
+
+    function markResult(isCorrect) {
+        if (!isCorrect) {
+            const originalIndex = fullData.findIndex(item => item.text === currentData[currentIndex].text);
+            if (!wrongIndices.includes(originalIndex)) {
+                wrongIndices.push(originalIndex);
+            }
+        }
+        nextPair();
+    }
+
+    function nextPair() {
+        currentIndex++;
+        if (currentIndex >= currentData.length) {
+            showSummary();
+        } else {
+            showPair();
+        }
+    }
+
+    function showSummary() {
+        document.getElementById('main').classList.add('hidden');
+        document.getElementById('summary-screen').classList.remove('hidden');
+        document.getElementById('wrong-count').innerText = wrongIndices.length;
+        
+        if (wrongIndices.length === 0) {
+            document.getElementById('review-btn').classList.add('hidden');
+            document.getElementById('summary-screen').querySelector('h3').innerText = "Perfect! All Items Mastered.";
+            document.getElementById('summary-screen').querySelector('.result-stats').innerText = "You've successfully finished this round.";
+        } else {
+            document.getElementById('review-btn').classList.remove('hidden');
+            document.getElementById('summary-screen').querySelector('h3').innerText = "Round Finished!";
+        }
+    }
+</script>
+</body>
+</html>
